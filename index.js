@@ -240,7 +240,7 @@ legend.add(perpGradient);
 Map.add(legend);
 
 // Center the map initially
-Map.setCenter(-100, 40, 5);
+Map.setCenter(122.5, 12.5, 5);
 
 // Initial display (before polygon is drawn)
 Map.addLayer(dem, demVis, 'Elevation (DEM)');
