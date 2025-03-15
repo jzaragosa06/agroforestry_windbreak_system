@@ -91,7 +91,7 @@ function updateWindLayer()
 
     // Calculate alignment of aspect with perpendicular wind direction
     // cos(aspect - perpWindDirection) gives high values when they align
-    var alignment = aspectRad.subtract(perpWindRad).cos();
+    var alignment = aspectRad.subtract(perpWindRad).cos().abs();
 
     // Multiply by slope to highlight steeper areas
     var highlighted = alignment.multiply(slope).abs();
@@ -111,7 +111,7 @@ function updateWindLayer()
     };
 
     var alignmentVis = {
-      min: -1,
+      min: 0,
       max: 1,
       palette: ['black', 'white']
     }
