@@ -97,9 +97,19 @@ function updateWindLayer()
     var highlighted = alignment.multiply(slope).abs();
 
     //------------------------------------------------------------------------------------------------------------
+    var alignmentVis = {
+      min: 0,
+      max: 1,
+      palette: ['white', 'black']
+    };
 
     // threshold of alignment is 0.3
-
+    var alignment_clean = alignment.updateMask(alignment.lte(0.3));
+    var alignment_clean_vis = {
+      min: 0,
+      max: 0.3,
+      palette: ['white', 'black']
+    };
 
     //------------------------------------------------------------------------------------------------------------
 
@@ -110,17 +120,13 @@ function updateWindLayer()
       palette: ['black', 'white']
     };
 
-    var alignmentVis = {
-      min: 0,
-      max: 1,
-      palette: ['black', 'white']
-    }
 
     // Add layers to the map
     Map.addLayer(clippedDEM, demVis, 'Elevation (DEM)');
     Map.addLayer(clippedWindDirection, windVis, 'Wind Direction', false, 0.5);
     Map.addLayer(highlighted, highlightVis, 'Elevation Perpendicular to Wind', true, 0.7);
-    Map.addLayer(alignment, alignmentVis, 'alignment', false, 0.7)
+    Map.addLayer(alignment, alignmentVis, 'alignment', false, 0.7);
+    Map.addLayer(alignment_clean, alignment_clean_vis, 'alignment clean', false, 0.7);
 
     // Center map on the polygon
     Map.centerObject(eePolygon);
