@@ -96,6 +96,13 @@ function updateWindLayer()
     // Multiply by slope to highlight steeper areas
     var highlighted = alignment.multiply(slope).abs();
 
+    //------------------------------------------------------------------------------------------------------------
+
+    // threshold of alignment is 0.3
+
+
+    //------------------------------------------------------------------------------------------------------------
+
     // Visualization for the highlighted perpendicular features
     var highlightVis = {
       min: 0,
@@ -103,10 +110,17 @@ function updateWindLayer()
       palette: ['black', 'white']
     };
 
+    var alignmentVis = {
+      min: -1,
+      max: 1,
+      palette: ['black', 'white']
+    }
+
     // Add layers to the map
     Map.addLayer(clippedDEM, demVis, 'Elevation (DEM)');
     Map.addLayer(clippedWindDirection, windVis, 'Wind Direction', false, 0.5);
     Map.addLayer(highlighted, highlightVis, 'Elevation Perpendicular to Wind', true, 0.7);
+    Map.addLayer(alignment, alignmentVis, 'alignment', false, 0.7)
 
     // Center map on the polygon
     Map.centerObject(eePolygon);
