@@ -96,21 +96,7 @@ function updateWindLayer()
     // Multiply by slope to highlight steeper areas
     var highlighted = alignment.multiply(slope).abs();
     //------------------------------------------------------------------------------------------------------------
-    var alignmentVis = {
-      min: 0,
-      max: 1,
-      palette: ['white', 'black']
-    };
-
-    // threshold of alignment is 0.3
-    // alignment will give us errorneous result
-    //because of the resolutin size from the dataset. 
-    var alignment_clean = alignment.updateMask(alignment.lte(0.3));
-    var alignment_clean_vis = {
-      min: 0,
-      max: 0.3,
-      palette: ['white', 'black']
-    };
+   
     
     var stats_highlighted = highlighted.reduceRegion({
       reducer: ee.Reducer.min().combine({
@@ -130,9 +116,9 @@ function updateWindLayer()
     
     var mask_rate = ee.Number(0.1);
     var mask_value_limit = max_highlighted.multiply(mask_rate); 
-    print("limit", mask_value_limit);
-    var highlighted_mask = highlighted.updateMask(highlighted.lte(10));
+    var highlighted_mask = highlighted.updateMask(highlighted.lte(mask_value_limit.getInfo()));
     
+    print('mask value limit', mask_value_limit);
     print('min info',  min_highlighted.getInfo());
     print('max info',  max_highlighted.getInfo());
 
@@ -142,11 +128,6 @@ function updateWindLayer()
       palette: ['white', 'black']
     };
     
-    // var highlighted_mask_vis = {
-    //   min: 0,
-    //   max: 5,
-    //   palette: ['white', 'black']
-    // };
     //------------------------------------------------------------------------------------------------------------
     // Visualization for the highlighted perpendicular features
     var highlightVis = {
@@ -160,8 +141,6 @@ function updateWindLayer()
     Map.addLayer(clippedDEM, demVis, 'Elevation (DEM)');
     Map.addLayer(clippedWindDirection, windVis, 'Wind Direction', false, 0.5);
     Map.addLayer(highlighted, highlightVis, 'Elevation Perpendicular to Wind', true, 0.7);
-    Map.addLayer(alignment, alignmentVis, 'alignment', false, 0.7);
-    Map.addLayer(alignment_clean, alignment_clean_vis,'alignment clean', false, 0.7);
     Map.addLayer(highlighted_mask, highlighted_mask_vis, "highlighted mask below mask value", false, 0.7);
     
     // Center map on the polygon
