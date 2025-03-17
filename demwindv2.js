@@ -31,8 +31,7 @@ var resultsPanel = ui.Panel({
 resultsPanel.style().set('shown', false);
 
 // Function to update wind layer based on selected dates and polygon selection
-function updateWindLayer()
-{
+function updateWindLayer() {
   var startDate = ee.Date(startDateInput.getValue());
   var endDate = ee.Date(endDateInput.getValue());
 
@@ -56,8 +55,7 @@ function updateWindLayer()
   Map.layers().reset();
 
   // Apply only within the drawn polygon
-  if (polygon)
-  {
+  if (polygon) {
     // Convert geometry to ee.Geometry
     var eePolygon = ee.Geometry(polygon);
 
@@ -96,8 +94,13 @@ function updateWindLayer()
     // Multiply by slope to highlight steeper areas
     var highlighted = alignment.multiply(slope).abs();
     //------------------------------------------------------------------------------------------------------------
-   
-    
+    /*
+      The layer represents areas where the terrain features have minimal alignment
+      with the perpendicular wind direction, specifically where the alignment values
+      These are areas where the topography perpendicular to the prevailing wind 
+      direction. 
+    */
+
     var stats_highlighted = highlighted.reduceRegion({
       reducer: ee.Reducer.min().combine({
         reducer2: ee.Reducer.max(),
@@ -108,26 +111,28 @@ function updateWindLayer()
       bestEffort: true // Helps avoid memory issues in complex geometries
     });
     print(stats_highlighted);
-    
-    
+
+
     // convert to ee.Number class for arithmitic operations
     var min_highlighted = ee.Number(stats_highlighted.get("aspect_min"));
-    var max_highlighted = ee.Number( stats_highlighted.get("aspect_max"));
-    
+    var max_highlighted = ee.Number(stats_highlighted.get("aspect_max"));
+
+    // we limit to the top 10% (default) of the values.
+    // To highlight the areas with the most significant elevation features.
     var mask_rate = ee.Number(0.1);
-    var mask_value_limit = max_highlighted.multiply(mask_rate); 
-    var highlighted_mask = highlighted.updateMask(highlighted.lte(mask_value_limit.getInfo()));
-    
+    var mask_value_limit = max_highlighted.multiply(mask_rate);
+    var highlighted_mask = highlighted.updateMask(highlighted.gte(mask_value_limit.getInfo()));
+
     print('mask value limit', mask_value_limit);
-    print('min info',  min_highlighted.getInfo());
-    print('max info',  max_highlighted.getInfo());
+    print('min info', min_highlighted.getInfo());
+    print('max info', max_highlighted.getInfo());
 
     var highlighted_mask_vis = {
-      min: min_highlighted.getInfo(),
+      min: mask_value_limit.getInfo(),
       max: max_highlighted.getInfo(),
       palette: ['white', 'black']
     };
-    
+
     //------------------------------------------------------------------------------------------------------------
     // Visualization for the highlighted perpendicular features
     var highlightVis = {
@@ -135,14 +140,13 @@ function updateWindLayer()
       max: 20,
       palette: ['white', 'black']
     };
-    
 
     // Add layers to the map
     Map.addLayer(clippedDEM, demVis, 'Elevation (DEM)');
     Map.addLayer(clippedWindDirection, windVis, 'Wind Direction', false, 0.5);
     Map.addLayer(highlighted, highlightVis, 'Elevation Perpendicular to Wind', true, 0.7);
     Map.addLayer(highlighted_mask, highlighted_mask_vis, "highlighted mask below mask value", false, 0.7);
-    
+
     // Center map on the polygon
     Map.centerObject(eePolygon);
 
@@ -156,8 +160,7 @@ function updateWindLayer()
     }));
 
     // Add mean wind direction to panel
-    meanWindDirection.evaluate(function (windDir)
-    {
+    meanWindDirection.evaluate(function (windDir) {
       resultsPanel.add(ui.Label('Mean Wind Direction: ' + Math.round(windDir) + '°'));
       resultsPanel.add(ui.Label('Perpendicular Direction: ' + (Math.round(windDir) + 90) % 360 + '°'));
 
@@ -168,8 +171,7 @@ function updateWindLayer()
       }));
     });
 
-  } else
-  {
+  } else {
     // If no polygon is drawn, display the global DEM layer
     Map.addLayer(dem, demVis, 'Elevation (DEM)');
 
@@ -210,8 +212,7 @@ var drawingTools = Map.drawingTools();
 drawingTools.setShape('polygon');
 
 // Handle polygon drawing
-drawingTools.onDraw(function (geometry)
-{
+drawingTools.onDraw(function (geometry) {
   // Clear previous drawings
   drawingTools.layers().remove(drawingTools.layers().get(0));
   drawingTools.addLayer([]);
@@ -224,8 +225,7 @@ drawingTools.onDraw(function (geometry)
 });
 
 // Handle polygon edits
-drawingTools.onEdit(function (geometry)
-{
+drawingTools.onEdit(function (geometry) {
   polygon = geometry;
   updateWindLayer();
 });
