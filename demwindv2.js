@@ -99,6 +99,9 @@ function updateWindLayer() {
       with the perpendicular wind direction, specifically where the alignment values
       These are areas where the topography perpendicular to the prevailing wind 
       direction. 
+
+      Since these are areas where the terrain is perpendicular to the wind direction,
+      they would have the highest wind interaction, creating maximum resistance and interaction. 
     */
 
     var stats_highlighted = highlighted.reduceRegion({
@@ -130,7 +133,7 @@ function updateWindLayer() {
     var highlighted_mask_vis = {
       min: mask_value_limit.getInfo(),
       max: max_highlighted.getInfo(),
-      palette: ['white', 'black']
+      palette: ['white', 'red']
     };
 
     //------------------------------------------------------------------------------------------------------------
