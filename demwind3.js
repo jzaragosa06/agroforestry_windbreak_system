@@ -11,6 +11,9 @@ var demVis = {
 // Global variable to store the drawn polygon
 var polygon = null;
 
+// Global variable to store the mask rate (default 0.9 or 90%)
+var maskRate = 0.9;
+
 // Create UI elements for date selection
 var startDateLabel = ui.Label('Select Start Date:');
 var startDateInput = ui.Textbox({ placeholder: 'YYYY-MM-DD', value: '2023-01-01' });
@@ -18,7 +21,35 @@ var startDateInput = ui.Textbox({ placeholder: 'YYYY-MM-DD', value: '2023-01-01'
 var endDateLabel = ui.Label('Select End Date:');
 var endDateInput = ui.Textbox({ placeholder: 'YYYY-MM-DD', value: '2023-01-02' });
 
+// Create UI elements for mask rate
+var maskRateLabel = ui.Label('Mask Rate (0.01-1.0) Higher value corresponds to significant areas:');
+var maskRateInput = ui.Textbox({ 
+  placeholder: '0.1', 
+  value: '0.1',
+  style: { width: '80px' }
+});
+
 var updateButton = ui.Button({ label: 'Update Wind Data', onClick: updateWindLayer });
+var updateMaskButton = ui.Button({ label: 'Update Mask Rate', onClick: updateMaskRate });
+
+// Function to update the mask rate
+function updateMaskRate() {
+  var newMaskRate = parseFloat(maskRateInput.getValue());
+  
+  // Validate the input
+  if (isNaN(newMaskRate) || newMaskRate < 0.01 || newMaskRate > 1.0) {
+    alert('Please enter a valid mask rate between 0.01 and 1.0');
+    return;
+  }
+  
+  // Update the global maskRate variable
+  maskRate = newMaskRate;
+  
+  // If a polygon is already drawn, update the visualization
+  if (polygon) {
+    updateWindLayer();
+  }
+}
 
 // Create the results panel (initially hidden)
 var resultsPanel = ui.Panel({
@@ -99,9 +130,6 @@ function updateWindLayer() {
       with the perpendicular wind direction, specifically where the alignment values
       These are areas where the topography perpendicular to the prevailing wind 
       direction. 
-
-      Since these are areas where the terrain is perpendicular to the wind direction,
-      they would have the highest wind interaction, creating maximum resistance and interaction. 
     */
 
     var stats_highlighted = highlighted.reduceRegion({
@@ -120,21 +148,22 @@ function updateWindLayer() {
     var min_highlighted = ee.Number(stats_highlighted.get("aspect_min"));
     var max_highlighted = ee.Number(stats_highlighted.get("aspect_max"));
 
-    // we limit to the top 10% (default) of the values.
-    // To highlight the areas with the most significant elevation features.
-    var mask_rate = ee.Number(0.1);
+    // We use the current maskRate value (from the UI)
+    // we want the mask to be higher so that we compute for the highlighted areas that are 
+    // upperbound of maskrate * max_highlighted. 
+    var mask_rate = ee.Number(maskRate);
     var mask_value_limit = max_highlighted.multiply(mask_rate);
     var highlighted_mask = highlighted.updateMask(highlighted.gte(mask_value_limit.getInfo()));
 
+    print('mask rate', mask_rate);
     print('mask value limit', mask_value_limit);
     print('min info', min_highlighted.getInfo());
     print('max info', max_highlighted.getInfo());
 
-    //High Wind-Terrain Interaction Areas (Top 10%)
     var highlighted_mask_vis = {
       min: mask_value_limit.getInfo(),
       max: max_highlighted.getInfo(),
-      palette: ['white', 'red']
+      palette: ['white', 'black']
     };
 
     //------------------------------------------------------------------------------------------------------------
@@ -149,7 +178,7 @@ function updateWindLayer() {
     Map.addLayer(clippedDEM, demVis, 'Elevation (DEM)');
     Map.addLayer(clippedWindDirection, windVis, 'Wind Direction', false, 0.5);
     Map.addLayer(highlighted, highlightVis, 'Elevation Perpendicular to Wind', true, 0.7);
-    Map.addLayer(highlighted_mask, highlighted_mask_vis, "highlighted mask below mask value", false, 0.7);
+    Map.addLayer(highlighted_mask, highlighted_mask_vis, "Highlighted Mask (Rate: " + maskRate + ")", true, 0.7);
 
     // Center map on the polygon
     Map.centerObject(eePolygon);
@@ -167,6 +196,7 @@ function updateWindLayer() {
     meanWindDirection.evaluate(function (windDir) {
       resultsPanel.add(ui.Label('Mean Wind Direction: ' + Math.round(windDir) + '°'));
       resultsPanel.add(ui.Label('Perpendicular Direction: ' + (Math.round(windDir) + 90) % 360 + '°'));
+      resultsPanel.add(ui.Label('Current Mask Rate: ' + maskRate + ' (' + (maskRate * 100) + '%)'));
 
       // Add explanation
       resultsPanel.add(ui.Label({
@@ -174,7 +204,6 @@ function updateWindLayer() {
         style: { margin: '10px 0 5px 0', fontSize: '12px' }
       }));
     });
-
   } else {
     // If no polygon is drawn, display the global DEM layer
     Map.addLayer(dem, demVis, 'Elevation (DEM)');
@@ -198,7 +227,14 @@ var controlPanel = ui.Panel({
     endDateInput,
     updateButton,
     ui.Label({
-      value: '2. Draw a polygon on the map to analyze',
+      value: '2. Mask Rate Control:',
+      style: { margin: '10px 0 5px 0', fontWeight: 'bold' }
+    }),
+    maskRateLabel,
+    maskRateInput,
+    updateMaskButton,
+    ui.Label({
+      value: '3. Draw a polygon on the map to analyze',
       style: { margin: '10px 0 5px 0' }
     })
   ],
@@ -286,3 +322,4 @@ Map.addLayer(dem, demVis, 'Elevation (DEM)');
 
 // Instructions
 print('Draw a polygon on the map to analyze elevation features perpendicular to wind direction.');
+print('Use the mask rate control to adjust the threshold for highlighted areas.');
