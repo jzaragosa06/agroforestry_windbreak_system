@@ -1,7 +1,9 @@
 // Load SRTM DEM dataset with improved shading
 var dem = ee.Image('USGS/SRTMGL1_003');
+//the min and max value are based on documentation: https://developers.google.com/earth-engine/datasets/catalog/USGS_SRTMGL1_003#bands
 var demVis = {
-  min: 0, max: 3000,
+  min: -10, 
+  max: 6500,
   palette: [
     '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
     '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'
@@ -77,8 +79,12 @@ function updateWindLayer() {
     'v': wind.select('v_component_of_wind_10m')
   }).rename('wind_direction');
 
+  //there is no min and max value based on the documentation.
+  //Since we know that it is expressed as degree, we know that the 
+  // min and max values are 0 and 360 respectively. 
   var windVis = {
-    min: 0, max: 360,
+    min: 0, 
+    max: 360,
     palette: ['#440154', '#3b528b', '#21908d', '#5dc963', '#fde725']
   };
 
@@ -141,7 +147,6 @@ function updateWindLayer() {
       scale: 30, // Resolution in meters
       bestEffort: true // Helps avoid memory issues in complex geometries
     });
-    print(stats_highlighted);
 
 
     // convert to ee.Number class for arithmitic operations
@@ -168,9 +173,10 @@ function updateWindLayer() {
 
     //------------------------------------------------------------------------------------------------------------
     // Visualization for the highlighted perpendicular features
+    //we need to dynamically update the min and max. 
     var highlightVis = {
-      min: 0,
-      max: 20,
+      min: min_highlighted.getInfo(),
+      max: max_highlighted.getInfo(),
       palette: ['white', 'black']
     };
 
